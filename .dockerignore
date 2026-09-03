@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+server/bin
+server/uploads
+server/cookies
+server/data.sqlite
+server/data.sqlite.pre-pivot-backup
+**/.env
+.git

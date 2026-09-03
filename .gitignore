@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+server/uploads/*
+!server/uploads/.gitkeep
+server/*.sqlite
+server/*.sqlite.*
+server/bin/
+server/cookies/*
+!server/cookies/.gitkeep
+web/dist/
+.claude/
