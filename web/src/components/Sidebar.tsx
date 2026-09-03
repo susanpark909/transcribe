@@ -99,8 +99,8 @@ export function Sidebar({
                 </span>
                 <span className="sidebar-item-title">{s.title}</span>
                 {s.status === "processing" && (
-                  <span className="pill pill-processing">
-                    <span className="dot-pulse" />
+                  <span className="pill pill-processing" title="Transcribing...">
+                    <span className="spinner spinner-sm" />
                   </span>
                 )}
                 {s.status === "error" && <span className="pill pill-error">!</span>}

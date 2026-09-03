@@ -72,7 +72,9 @@ export async function resolveMediaUrl(pageUrl: string): Promise<ResolveResult> {
       candidates.push({ url, score });
     });
 
-    await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 30_000 }).catch(() => {});
+    await page
+      .goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 30_000 })
+      .catch((err) => console.error(`resolveMediaUrl: page.goto failed for ${pageUrl}:`, err));
 
     // Many players only start loading the stream once "played" — best-effort nudge.
     const playSelectors = [
@@ -100,6 +102,9 @@ export async function resolveMediaUrl(pageUrl: string): Promise<ResolveResult> {
       const title = await page.title().catch(() => "");
       const looksLikeLoginWall =
         LOGIN_URL_PATTERN.test(finalUrl) || /\b(sign in|log in)\b/i.test(title);
+      console.error(
+        `resolveMediaUrl found no candidates for ${pageUrl} — finalUrl=${finalUrl} title=${JSON.stringify(title)} cookiesInjected=${injectedCookies.length}`
+      );
       if (looksLikeLoginWall && !injectedCookies.length) {
         return { kind: "needs-login", domain: registrableDomain(new URL(pageUrl).hostname) };
       }
