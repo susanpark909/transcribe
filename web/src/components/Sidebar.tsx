@@ -51,7 +51,7 @@ export function Sidebar({
       <div className="sidebar-header">
         <div className="brand">
           <SparkleIcon className="brand-mark" />
-          <h1>LearnWith</h1>
+          <h1>Transcribe</h1>
         </div>
         <button className="btn-primary btn-sm" onClick={onNew}>
           <PlusIcon /> New

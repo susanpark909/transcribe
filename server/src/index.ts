@@ -23,7 +23,7 @@ if (appPassword) {
       ? Buffer.from(encoded, "base64").toString("utf-8").split(":")
       : [];
     if (scheme === "Basic" && providedPassword === appPassword) return next();
-    res.set("WWW-Authenticate", 'Basic realm="LearnWith"');
+    res.set("WWW-Authenticate", 'Basic realm="Transcribe"');
     res.status(401).send("Authentication required.");
   });
 }
@@ -51,5 +51,5 @@ app.get(/^(?!\/api\/).*/, (_req, res) => {
 
 const port = Number(process.env.PORT) || 8787;
 app.listen(port, () => {
-  console.log(`learnwith server listening on http://localhost:${port}`);
+  console.log(`transcribe server listening on http://localhost:${port}`);
 });

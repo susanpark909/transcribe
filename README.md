@@ -1,4 +1,4 @@
-# LearnWith
+# Transcribe
 
 A pure transcription tool. Paste a video link (any site, including
 login-gated course platforms like Skool or Circle) or upload an MP3, and get

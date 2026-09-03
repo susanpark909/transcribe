@@ -1,6 +1,8 @@
--- LearnWith's tables. Run this in your Supabase project's SQL editor (or via
--- the Supabase MCP/CLI) to set up storage for a fresh deployment. Existing
--- tables in the same project (e.g. from other apps) are untouched.
+-- Transcribe's tables (kept as learnwith_* internally — purely an
+-- implementation detail, not user-facing). Run this in your Supabase
+-- project's SQL editor (or via the Supabase MCP/CLI) to set up storage for a
+-- fresh deployment. Existing tables in the same project (e.g. from other
+-- apps) are untouched.
 
 create table if not exists learnwith_sources (
   id uuid primary key default gen_random_uuid(),
