@@ -178,7 +178,10 @@ export async function downloadAndTranscribeVideo(
       // No dedicated extractor for this site (common for custom course platforms like
       // Skool/Circle) — fall back to a real browser to find the actual video stream.
       const resolved = await resolveMediaUrl(url).catch(
-        (): Awaited<ReturnType<typeof resolveMediaUrl>> => ({ kind: "not-found" })
+        (browserErr): Awaited<ReturnType<typeof resolveMediaUrl>> => {
+          console.error("resolveMediaUrl failed:", browserErr);
+          return { kind: "not-found" };
+        }
       );
 
       if (resolved.kind === "needs-login") {

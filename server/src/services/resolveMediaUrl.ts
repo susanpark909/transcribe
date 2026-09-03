@@ -34,7 +34,14 @@ export type ResolveResult =
  */
 export async function resolveMediaUrl(pageUrl: string): Promise<ResolveResult> {
   const injectedCookies = await getCookiesForUrl(pageUrl).catch(() => []);
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    // Needed in most container environments (e.g. Render) — the default
+    // Chromium sandbox requires kernel privileges Docker containers usually
+    // don't grant, and the default /dev/shm size is too small for Chromium's
+    // shared memory needs.
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+  });
 
   try {
     const context = await browser.newContext();
