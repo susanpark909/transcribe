@@ -76,7 +76,14 @@ export async function resolveMediaUrl(pageUrl: string): Promise<ResolveResult> {
       .goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 30_000 })
       .catch((err) => console.error(`resolveMediaUrl: page.goto failed for ${pageUrl}:`, err));
 
+    // On a slower/CPU-throttled host (e.g. Render's free tier), the page's own JS
+    // may still be fetching/hydrating the embedded player well after
+    // domcontentloaded — give that a chance to settle before looking for it.
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+
     // Many players only start loading the stream once "played" — best-effort nudge.
+    // Tried twice: the player element may not exist yet on the first pass on a
+    // slow host, even after the networkidle wait above.
     const playSelectors = [
       "video",
       "button[aria-label*='play' i]",
@@ -84,12 +91,15 @@ export async function resolveMediaUrl(pageUrl: string): Promise<ResolveResult> {
       "[class*='play-button']",
       "[class*='PlayButton']",
     ];
-    for (const selector of playSelectors) {
-      try {
-        await page.locator(selector).first().click({ timeout: 2000 });
-      } catch {
-        // ignore — selector may not exist or not be clickable, that's fine
+    for (const attempt of [0, 1]) {
+      for (const selector of playSelectors) {
+        try {
+          await page.locator(selector).first().click({ timeout: 2000 });
+        } catch {
+          // ignore — selector may not exist or not be clickable, that's fine
+        }
       }
+      if (attempt === 0) await page.waitForTimeout(4000);
     }
 
     // Give the player time to start streaming.
