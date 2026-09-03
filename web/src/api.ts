@@ -7,6 +7,13 @@ export interface Source {
   status: "processing" | "ready" | "error";
   error: string | null;
   needs_login_domain: string | null;
+  project_id: string | null;
+  created_at: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
   created_at: string;
 }
 
@@ -60,4 +67,34 @@ export const api = {
       (r) => handle<Source>(r)
     );
   },
+
+  moveSource: (id: string, projectId: string | null) =>
+    fetch(`/api/sources/${id}/move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId }),
+    }).then((r) => handle<Source>(r)),
+
+  listProjects: () => fetch("/api/projects").then((r) => handle<Project[]>(r)),
+
+  createProject: (name: string) =>
+    fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    }).then((r) => handle<Project>(r)),
+
+  renameProject: (id: string, name: string) =>
+    fetch(`/api/projects/${id}/rename`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    }).then((r) => {
+      if (!r.ok) throw new Error("Failed to rename");
+    }),
+
+  deleteProject: (id: string) =>
+    fetch(`/api/projects/${id}`, { method: "DELETE" }).then((r) => {
+      if (!r.ok) throw new Error("Failed to delete");
+    }),
 };

@@ -4,6 +4,7 @@ import cors from "cors";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { sourcesRouter } from "./routes/sources.js";
+import { projectsRouter } from "./routes/projects.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -36,6 +37,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/sources", sourcesRouter);
+app.use("/api/projects", projectsRouter);
 
 // In production, serve the built frontend from this same server so only one
 // deployment is needed. In local dev, the Vite dev server handles the
@@ -48,6 +50,21 @@ app.get(/^(?!\/api\/).*/, (_req, res) => {
     if (err) res.status(404).send("Not found — the frontend hasn't been built yet (npm run build in web/).");
   });
 });
+
+// Catches errors from any route wrapped in asyncHandler. Without this, an
+// error thrown inside an async Express 4 route handler crashes the entire
+// process — taking down every in-flight request, not just the failing one —
+// instead of just failing that one request.
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("Unhandled route error:", err);
+  res.status(500).json({ error: err instanceof Error ? err.message : "Internal server error" });
+});
+
+// Last-resort safety net for anything outside Express's request cycle (e.g.
+// the fire-and-forget background transcription jobs) — logs instead of
+// silently crashing the whole server.
+process.on("unhandledRejection", (err) => console.error("Unhandled rejection:", err));
+process.on("uncaughtException", (err) => console.error("Uncaught exception:", err));
 
 const port = Number(process.env.PORT) || 8787;
 app.listen(port, () => {

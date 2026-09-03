@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, Source } from "./api";
+import { api, Source, Project } from "./api";
 import { Sidebar } from "./components/Sidebar";
 import { UploadPanel } from "./components/UploadPanel";
 import { SourceView } from "./components/SourceView";
 
 export default function App() {
   const [sources, setSources] = useState<Source[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<Source | null>(null);
   const [showUpload, setShowUpload] = useState(true);
@@ -18,10 +19,16 @@ export default function App() {
     setSources(list);
   }, []);
 
+  const refreshProjects = useCallback(async () => {
+    const list = await api.listProjects();
+    setProjects(list);
+  }, []);
+
   useEffect(() => {
     refreshList();
+    refreshProjects();
     api.health().then(setHealth).catch(() => {});
-  }, [refreshList]);
+  }, [refreshList, refreshProjects]);
 
   const loadDetail = useCallback(async (id: string) => {
     const d = await api.getSource(id);
@@ -97,10 +104,48 @@ export default function App() {
     }
   }
 
+  async function handleMove(id: string, projectId: string | null) {
+    try {
+      const updated = await api.moveSource(id, projectId);
+      setSources((prev) => prev.map((s) => (s.id === id ? { ...s, project_id: updated.project_id } : s)));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function handleCreateProject(name: string) {
+    try {
+      await api.createProject(name);
+      refreshProjects();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function handleRenameProject(id: string, name: string) {
+    try {
+      await api.renameProject(id, name);
+      setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  async function handleDeleteProject(id: string) {
+    try {
+      await api.deleteProject(id);
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      refreshList();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   return (
     <div className="app">
       <Sidebar
         sources={sources}
+        projects={projects}
         selectedId={selectedId}
         onSelect={handleSelect}
         onNew={() => {
@@ -109,6 +154,10 @@ export default function App() {
         }}
         onRename={handleRename}
         onDelete={handleDelete}
+        onMove={handleMove}
+        onCreateProject={handleCreateProject}
+        onRenameProject={handleRenameProject}
+        onDeleteProject={handleDeleteProject}
       />
       <main className="main">
         {health && !health.assemblyAiConfigured && (

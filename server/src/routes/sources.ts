@@ -15,6 +15,7 @@ import {
   markNeedsLogin,
   resetForRetry,
   deleteSource,
+  moveSourceToProject,
   upsertCookieContent,
 } from "../db.js";
 import {
@@ -25,6 +26,7 @@ import {
 import { transcribeAudioFile } from "../services/transcribeAudio.js";
 import { downloadAndTranscribeVideo, LoginRequiredError } from "../services/transcribeVideoLink.js";
 import { registrableDomain } from "../services/cookiesShared.js";
+import { asyncHandler } from "../asyncHandler.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadDir = path.join(__dirname, "..", "..", "uploads");
@@ -42,22 +44,22 @@ const upload = multer({
 
 export const sourcesRouter = Router();
 
-sourcesRouter.get("/", async (_req, res) => {
+sourcesRouter.get("/", asyncHandler(async (_req, res) => {
   res.json(await listSources());
-});
+}));
 
-sourcesRouter.get("/:id", async (req, res) => {
+sourcesRouter.get("/:id", asyncHandler(async (req, res) => {
   const source = await getSource(req.params.id);
   if (!source) return res.status(404).json({ error: "Not found" });
   res.json(source);
-});
+}));
 
-sourcesRouter.delete("/:id", async (req, res) => {
+sourcesRouter.delete("/:id", asyncHandler(async (req, res) => {
   await deleteSource(req.params.id);
   res.status(204).end();
-});
+}));
 
-sourcesRouter.post("/:id/rename", async (req, res) => {
+sourcesRouter.post("/:id/rename", asyncHandler(async (req, res) => {
   const source = await getSource(req.params.id);
   if (!source) return res.status(404).json({ error: "Not found" });
 
@@ -66,9 +68,18 @@ sourcesRouter.post("/:id/rename", async (req, res) => {
 
   await renameSource(source.id, title);
   res.json(await getSource(source.id));
-});
+}));
 
-sourcesRouter.post("/audio", upload.single("file"), async (req, res) => {
+sourcesRouter.post("/:id/move", asyncHandler(async (req, res) => {
+  const source = await getSource(req.params.id);
+  if (!source) return res.status(404).json({ error: "Not found" });
+
+  const projectId = req.body?.projectId;
+  await moveSourceToProject(source.id, projectId ? String(projectId) : null);
+  res.json(await getSource(source.id));
+}));
+
+sourcesRouter.post("/audio", upload.single("file"), asyncHandler(async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -91,7 +102,7 @@ sourcesRouter.post("/audio", upload.single("file"), async (req, res) => {
   } finally {
     fs.unlink(file.path, () => {});
   }
-});
+}));
 
 async function resolveVideoContent(
   url: string
@@ -128,7 +139,7 @@ async function processVideoSource(sourceId: string, url: string) {
   }
 }
 
-sourcesRouter.post("/video", async (req, res) => {
+sourcesRouter.post("/video", asyncHandler(async (req, res) => {
   const url = String(req.body?.url ?? "").trim();
   if (!url) return res.status(400).json({ error: "No URL provided" });
   try {
@@ -140,10 +151,10 @@ sourcesRouter.post("/video", async (req, res) => {
   const source = await createPendingSource({ kind: "video", title: url, origin: url });
   res.status(202).json(source);
   void processVideoSource(source.id, url);
-});
+}));
 
 /** Saves an uploaded cookies.txt for a video that needs a login, then retries it. */
-sourcesRouter.post("/:id/cookies", upload.single("file"), async (req, res) => {
+sourcesRouter.post("/:id/cookies", upload.single("file"), asyncHandler(async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).json({ error: "No file uploaded" });
 
@@ -166,4 +177,4 @@ sourcesRouter.post("/:id/cookies", upload.single("file"), async (req, res) => {
   } finally {
     fs.unlink(file.path, () => {});
   }
-});
+}));

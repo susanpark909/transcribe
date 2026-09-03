@@ -23,6 +23,13 @@ export interface SourceRow {
   status: "processing" | "ready" | "error";
   error: string | null;
   needs_login_domain: string | null;
+  project_id: string | null;
+  created_at: string;
+}
+
+export interface ProjectRow {
+  id: string;
+  name: string;
   created_at: string;
 }
 
@@ -102,6 +109,38 @@ export async function resetForRetry(id: string): Promise<void> {
 
 export async function deleteSource(id: string): Promise<void> {
   const { error } = await supabase.from("learnwith_sources").delete().eq("id", id);
+  raise(error);
+}
+
+export async function moveSourceToProject(id: string, projectId: string | null): Promise<void> {
+  const { error } = await supabase.from("learnwith_sources").update({ project_id: projectId }).eq("id", id);
+  raise(error);
+}
+
+// ---------- Projects (folders for organizing sources) ----------
+
+export async function listProjects(): Promise<ProjectRow[]> {
+  const { data, error } = await supabase
+    .from("learnwith_projects")
+    .select("*")
+    .order("created_at", { ascending: false });
+  raise(error);
+  return (data as ProjectRow[]) ?? [];
+}
+
+export async function createProject(name: string): Promise<ProjectRow> {
+  const { data, error } = await supabase.from("learnwith_projects").insert({ name }).select().single();
+  raise(error);
+  return data as ProjectRow;
+}
+
+export async function renameProject(id: string, name: string): Promise<void> {
+  const { error } = await supabase.from("learnwith_projects").update({ name }).eq("id", id);
+  raise(error);
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  const { error } = await supabase.from("learnwith_projects").delete().eq("id", id);
   raise(error);
 }
 

@@ -292,6 +292,109 @@ p.small {
   background: rgba(220, 38, 38, 0.08) !important;
 }
 
+/* ---------- Folders ---------- */
+
+.project-group {
+  margin-bottom: 4px;
+}
+
+.project-header {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.project-header-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.project-header-main:hover {
+  color: var(--text);
+  background: rgba(15, 23, 32, 0.04);
+}
+
+.project-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.chevron-open {
+  transform: rotate(90deg);
+}
+
+.project-items {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+  margin: 2px 0 6px 20px;
+}
+
+.project-empty {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+.new-folder-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12.5px;
+  margin: 2px 0 8px;
+}
+
+.new-folder-btn:hover {
+  color: var(--accent-2);
+  border-color: var(--accent-2);
+}
+
+.item-menu-hint {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.item-menu button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.item-menu button:disabled:hover {
+  background: transparent;
+}
+
 .kind-chip {
   display: inline-flex;
   align-items: center;

@@ -4,6 +4,12 @@
 -- fresh deployment. Existing tables in the same project (e.g. from other
 -- apps) are untouched.
 
+create table if not exists learnwith_projects (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists learnwith_sources (
   id uuid primary key default gen_random_uuid(),
   kind text not null check (kind in ('video', 'audio')),
@@ -13,6 +19,7 @@ create table if not exists learnwith_sources (
   status text not null default 'processing' check (status in ('processing', 'ready', 'error')),
   error text,
   needs_login_domain text,
+  project_id uuid references learnwith_projects(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
@@ -22,6 +29,7 @@ create table if not exists learnwith_cookies (
   updated_at timestamptz not null default now()
 );
 
+alter table learnwith_projects enable row level security;
 alter table learnwith_sources enable row level security;
 alter table learnwith_cookies enable row level security;
 
@@ -29,5 +37,6 @@ alter table learnwith_cookies enable row level security;
 -- the service_role/secret key (server-side only, never exposed to the
 -- browser), which bypasses RLS entirely. Enabling RLS with zero policies
 -- just means the (unused) anon/publishable key can't read or write anything.
+grant all on table learnwith_projects to service_role, postgres;
 grant all on table learnwith_sources to service_role, postgres;
 grant all on table learnwith_cookies to service_role, postgres;
