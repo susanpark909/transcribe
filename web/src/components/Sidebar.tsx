@@ -65,10 +65,17 @@ export function Sidebar({
   // individual button's onClick can stopPropagation() and block it — with
   // nested folders, several buttons (folder header, "New folder") do exactly
   // that, which made the old bubble-up-to-the-sidebar approach unreliable
-  // whenever a menu happened to overlap one of them.
+  // whenever a menu happened to overlap one of them. Clicks inside a menu's
+  // own wrapper are left alone — this fires on mousedown, which happens
+  // *before* the click that would trigger e.g. Rename, so closing here too
+  // would unmount the button out from under the click before it registers.
   useEffect(() => {
-    document.addEventListener("mousedown", closeAllMenus, true);
-    return () => document.removeEventListener("mousedown", closeAllMenus, true);
+    function handlePointerDown(e: MouseEvent) {
+      if ((e.target as Element).closest(".item-menu-wrap")) return;
+      closeAllMenus();
+    }
+    document.addEventListener("mousedown", handlePointerDown, true);
+    return () => document.removeEventListener("mousedown", handlePointerDown, true);
   }, []);
 
   function startRename(s: Source) {
