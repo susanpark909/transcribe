@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Source, Project } from "../api";
 import {
   VideoIcon,
@@ -60,6 +60,16 @@ export function Sidebar({
     setMoveMenuId(null);
     setProjectMenuOpenId(null);
   }
+
+  // Capture-phase (not bubble-phase) so this reliably fires before any
+  // individual button's onClick can stopPropagation() and block it — with
+  // nested folders, several buttons (folder header, "New folder") do exactly
+  // that, which made the old bubble-up-to-the-sidebar approach unreliable
+  // whenever a menu happened to overlap one of them.
+  useEffect(() => {
+    document.addEventListener("mousedown", closeAllMenus, true);
+    return () => document.removeEventListener("mousedown", closeAllMenus, true);
+  }, []);
 
   function startRename(s: Source) {
     closeAllMenus();
@@ -229,7 +239,7 @@ export function Sidebar({
   const ungrouped = sources.filter((s) => !s.project_id);
 
   return (
-    <aside className="sidebar" onClick={() => closeAllMenus()}>
+    <aside className="sidebar">
       <div className="sidebar-header">
         <div className="brand">
           <SparkleIcon className="brand-mark" />
@@ -243,6 +253,36 @@ export function Sidebar({
       <div className="sidebar-list">
         {sources.length === 0 && projects.length === 0 && (
           <p className="sidebar-empty">Nothing here yet. Add your first video or audio file.</p>
+        )}
+
+        {creatingFolder ? (
+          <div className="sidebar-item sidebar-item-editing" onClick={(e) => e.stopPropagation()}>
+            <span className="kind-chip">
+              <FolderIcon />
+            </span>
+            <input
+              autoFocus
+              className="rename-input"
+              placeholder="Folder name"
+              value={newFolderValue}
+              onChange={(e) => setNewFolderValue(e.target.value)}
+              onBlur={commitNewFolder}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitNewFolder();
+                if (e.key === "Escape") setCreatingFolder(false);
+              }}
+            />
+          </div>
+        ) : (
+          <button
+            className="new-folder-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCreatingFolder(true);
+            }}
+          >
+            <FolderPlusIcon /> New folder
+          </button>
         )}
 
         {projects.map((p) => {
@@ -307,36 +347,6 @@ export function Sidebar({
             </div>
           );
         })}
-
-        {creatingFolder ? (
-          <div className="sidebar-item sidebar-item-editing" onClick={(e) => e.stopPropagation()}>
-            <span className="kind-chip">
-              <FolderIcon />
-            </span>
-            <input
-              autoFocus
-              className="rename-input"
-              placeholder="Folder name"
-              value={newFolderValue}
-              onChange={(e) => setNewFolderValue(e.target.value)}
-              onBlur={commitNewFolder}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitNewFolder();
-                if (e.key === "Escape") setCreatingFolder(false);
-              }}
-            />
-          </div>
-        ) : (
-          <button
-            className="new-folder-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              setCreatingFolder(true);
-            }}
-          >
-            <FolderPlusIcon /> New folder
-          </button>
-        )}
 
         {ungrouped.map(renderSource)}
       </div>
