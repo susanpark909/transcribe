@@ -19,6 +19,33 @@ interface Candidate {
   score: number;
 }
 
+/**
+ * Several course platforms (Skool among them) embed video via Mux, with a
+ * signed playback token baked into the page's own SSR data rather than
+ * fetched client-side. The player itself is a <mux-player> custom element
+ * whose <video> lives in a shadow root — invisible to both a plain DOM query
+ * and (until actually clicked) our network sniffing below. Since the
+ * playbackId/token pair is already sitting in the HTML, it's simpler and far
+ * more reliable to build the HLS URL ourselves than to coax the player into
+ * mounting. Mux checks the manifest/segment requests' Referer against an
+ * allowlist tied to the token, so callers must send one back matching the
+ * page's origin (see the `referer` field on the returned result).
+ */
+async function tryMuxDirectUrl(html: string, pageOrigin: string): Promise<Candidate | null> {
+  const idMatch = html.match(/"playbackId"\s*:\s*"([a-zA-Z0-9]+)"/);
+  const tokenMatch = html.match(/"playbackToken"\s*:\s*"([a-zA-Z0-9._-]+)"/);
+  if (!idMatch || !tokenMatch) return null;
+
+  const hlsUrl = `https://stream.mux.com/${idMatch[1]}.m3u8?token=${tokenMatch[1]}`;
+  try {
+    const res = await fetch(hlsUrl, { headers: { Referer: `${pageOrigin}/`, Origin: pageOrigin } });
+    if (!res.ok) return null;
+  } catch {
+    return null;
+  }
+  return { url: hlsUrl, score: 3 };
+}
+
 export type ResolveResult =
   | { kind: "found"; mediaUrl: string; cookieHeader: string; referer: string }
   | { kind: "needs-login"; domain: string }
@@ -80,6 +107,18 @@ export async function resolveMediaUrl(pageUrl: string): Promise<ResolveResult> {
     // may still be fetching/hydrating the embedded player well after
     // domcontentloaded — give that a chance to settle before looking for it.
     await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+
+    const pageOrigin = new URL(pageUrl).origin;
+    const muxCandidate = await tryMuxDirectUrl(await page.content(), pageOrigin);
+    if (muxCandidate) {
+      const cookies = await context.cookies();
+      return {
+        kind: "found",
+        mediaUrl: muxCandidate.url,
+        cookieHeader: cookies.map((c) => `${c.name}=${c.value}`).join("; "),
+        referer: `${pageOrigin}/`,
+      };
+    }
 
     // Many players only start loading the stream once "played" — best-effort nudge.
     // Tried twice: the player element may not exist yet on the first pass on a
