@@ -110,8 +110,18 @@ export async function resolveMediaUrl(pageUrl: string): Promise<ResolveResult> {
       // had no cookies to offer), that's almost certainly why.
       const finalUrl = page.url();
       const title = await page.title().catch(() => "");
+      const finalPath = new URL(finalUrl).pathname;
+      const originalPath = new URL(pageUrl).pathname;
+      // Some platforms (e.g. Skool) don't redirect an unauthenticated request to
+      // a URL that looks like a login page — they redirect to some other public
+      // page (a group's "about" page instead of its gated classroom). So treat
+      // any redirect away from the requested path as a login wall too, as long
+      // as we had no cookies to offer — a legitimately public page wouldn't send
+      // an anonymous visitor somewhere else entirely.
       const looksLikeLoginWall =
-        LOGIN_URL_PATTERN.test(finalUrl) || /\b(sign in|log in)\b/i.test(title);
+        LOGIN_URL_PATTERN.test(finalUrl) ||
+        /\b(sign in|log in)\b/i.test(title) ||
+        finalPath !== originalPath;
       console.error(
         `resolveMediaUrl found no candidates for ${pageUrl} — finalUrl=${finalUrl} title=${JSON.stringify(title)} cookiesInjected=${injectedCookies.length}`
       );
