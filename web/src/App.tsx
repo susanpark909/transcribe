@@ -3,6 +3,7 @@ import { api, Source, Project } from "./api";
 import { Sidebar } from "./components/Sidebar";
 import { UploadPanel } from "./components/UploadPanel";
 import { SourceView } from "./components/SourceView";
+import { MenuIcon } from "./components/Icons";
 
 export default function App() {
   const [sources, setSources] = useState<Source[]>([]);
@@ -12,6 +13,7 @@ export default function App() {
   const [showUpload, setShowUpload] = useState(true);
   const [health, setHealth] = useState<{ assemblyAiConfigured: boolean } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refreshList = useCallback(async () => {
@@ -66,12 +68,14 @@ export default function App() {
   function handleSelect(id: string) {
     setShowUpload(false);
     setSelectedId(id);
+    setMobileNavOpen(false);
   }
 
   function handleCreated(id: string) {
     setShowUpload(false);
     setSelectedId(id);
     refreshList();
+    setMobileNavOpen(false);
   }
 
   function handleUpdated(updated: Source) {
@@ -151,6 +155,7 @@ export default function App() {
         onNew={() => {
           setShowUpload(true);
           setSelectedId(null);
+          setMobileNavOpen(false);
         }}
         onRename={handleRename}
         onDelete={handleDelete}
@@ -158,8 +163,16 @@ export default function App() {
         onCreateProject={handleCreateProject}
         onRenameProject={handleRenameProject}
         onDeleteProject={handleDeleteProject}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
       />
       <main className="main">
+        <div className="mobile-topbar">
+          <button className="mobile-menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
+            <MenuIcon />
+          </button>
+          <h1>Transcribe</h1>
+        </div>
         {health && !health.assemblyAiConfigured && (
           <div className="notice notice-warning">
             <div>ASSEMBLYAI_API_KEY is not set on the server — transcription won't work yet.</div>

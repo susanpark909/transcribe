@@ -11,6 +11,7 @@ import {
   FolderIcon,
   FolderPlusIcon,
   ChevronIcon,
+  CloseIcon,
 } from "./Icons";
 
 const KIND_ICON: Record<Source["kind"], (props: { className?: string }) => JSX.Element> = {
@@ -30,6 +31,8 @@ export function Sidebar({
   onCreateProject,
   onRenameProject,
   onDeleteProject,
+  mobileOpen,
+  onMobileClose,
 }: {
   sources: Source[];
   projects: Project[];
@@ -42,6 +45,8 @@ export function Sidebar({
   onCreateProject: (name: string) => void;
   onRenameProject: (id: string, name: string) => void;
   onDeleteProject: (id: string) => void;
+  mobileOpen: boolean;
+  onMobileClose: () => void;
 }) {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [moveMenuId, setMoveMenuId] = useState<string | null>(null);
@@ -246,15 +251,25 @@ export function Sidebar({
   const ungrouped = sources.filter((s) => !s.project_id);
 
   return (
-    <aside className="sidebar">
+    <>
+      <div
+        className={`sidebar-backdrop ${mobileOpen ? "visible" : ""}`}
+        onClick={onMobileClose}
+      />
+      <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
       <div className="sidebar-header">
         <div className="brand">
           <SparkleIcon className="brand-mark" />
           <h1>Transcribe</h1>
         </div>
-        <button className="btn-primary btn-sm" onClick={onNew}>
-          <PlusIcon /> New
-        </button>
+        <div className="sidebar-header-actions">
+          <button className="btn-primary btn-sm" onClick={onNew}>
+            <PlusIcon /> New
+          </button>
+          <button className="sidebar-close-btn" onClick={onMobileClose} aria-label="Close menu">
+            <CloseIcon />
+          </button>
+        </div>
       </div>
 
       <div className="sidebar-list">
@@ -357,6 +372,7 @@ export function Sidebar({
 
         {ungrouped.map(renderSource)}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
