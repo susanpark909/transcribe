@@ -104,13 +104,41 @@ p.small {
 /* ---------- Sidebar ---------- */
 
 .sidebar {
-  width: 288px;
+  width: var(--sidebar-width, 288px);
   flex-shrink: 0;
   background: var(--glass);
   backdrop-filter: blur(20px);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+.sidebar-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 3px;
+  width: 2px;
+  height: 100%;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.sidebar-resize-handle:hover::after,
+.sidebar-resize-handle.resizing::after {
+  background: var(--accent);
 }
 
 .sidebar-header {
@@ -175,7 +203,7 @@ p.small {
   padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
 }
 
 .sidebar-empty {
@@ -191,8 +219,8 @@ p.small {
   gap: 10px;
   width: 100%;
   text-align: left;
-  padding: 9px 10px;
-  border-radius: 10px;
+  padding: 5px 10px;
+  border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--text);
@@ -234,7 +262,7 @@ p.small {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
+  padding: 5px 10px;
 }
 
 .rename-input {
@@ -373,10 +401,10 @@ p.small {
 .project-items {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
   padding-left: 14px;
   border-left: 1px solid var(--border);
-  margin: 2px 0 6px 20px;
+  margin: 2px 0 4px 20px;
 }
 
 .project-empty {
@@ -882,6 +910,10 @@ p.small {
     transform: translateX(-100%);
     transition: transform 0.25s ease;
     box-shadow: 0 0 40px rgba(15, 23, 32, 0.25);
+  }
+
+  .sidebar-resize-handle {
+    display: none;
   }
 
   .sidebar.sidebar-open {

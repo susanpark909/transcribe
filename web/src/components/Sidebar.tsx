@@ -19,6 +19,21 @@ const KIND_ICON: Record<Source["kind"], (props: { className?: string }) => JSX.E
   audio: AudioIcon,
 };
 
+const SIDEBAR_WIDTH_KEY = "transcribe-sidebar-width";
+const MIN_SIDEBAR_WIDTH = 220;
+const MAX_SIDEBAR_WIDTH = 480;
+const DEFAULT_SIDEBAR_WIDTH = 288;
+
+function readStoredSidebarWidth(): number {
+  try {
+    const raw = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
+    if (raw >= MIN_SIDEBAR_WIDTH && raw <= MAX_SIDEBAR_WIDTH) return raw;
+  } catch {
+    // localStorage unavailable (private browsing, etc.) — fall back to the default.
+  }
+  return DEFAULT_SIDEBAR_WIDTH;
+}
+
 export function Sidebar({
   sources,
   projects,
@@ -59,6 +74,41 @@ export function Sidebar({
   const [projectRenameValue, setProjectRenameValue] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderValue, setNewFolderValue] = useState("");
+
+  const [width, setWidth] = useState(readStoredSidebarWidth);
+  const [resizing, setResizing] = useState(false);
+
+  // Dragging updates width live via pointer coordinates (the sidebar's left
+  // edge is always at x=0, so clientX doubles as the desired width) — that
+  // has to live at the window level since the pointer moves past the handle
+  // itself as soon as dragging starts.
+  useEffect(() => {
+    if (!resizing) return;
+    function handleMove(e: PointerEvent) {
+      setWidth(Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, e.clientX)));
+    }
+    function handleUp() {
+      setResizing(false);
+    }
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    return () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+  }, [resizing]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width));
+    } catch {
+      // ignore — nothing to persist to in private browsing
+    }
+  }, [width]);
 
   function closeAllMenus() {
     setMenuOpenId(null);
@@ -256,7 +306,10 @@ export function Sidebar({
         className={`sidebar-backdrop ${mobileOpen ? "visible" : ""}`}
         onClick={onMobileClose}
       />
-      <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
+      <aside
+        className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}
+        style={{ ["--sidebar-width" as string]: `${width}px` }}
+      >
       <div className="sidebar-header">
         <div className="brand">
           <SparkleIcon className="brand-mark" />
@@ -372,6 +425,13 @@ export function Sidebar({
 
         {ungrouped.map(renderSource)}
       </div>
+      <div
+        className={`sidebar-resize-handle ${resizing ? "resizing" : ""}`}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          setResizing(true);
+        }}
+      />
       </aside>
     </>
   );
