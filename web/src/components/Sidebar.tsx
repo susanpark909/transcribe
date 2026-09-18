@@ -428,7 +428,11 @@ export function Sidebar({
                 className={`project-header ${dragOverProjectId === p.id ? "drag-over" : ""}`}
                 onClick={(e) => e.stopPropagation()}
                 onDragOver={(e) => {
-                  if (!draggingId) return;
+                  // Checked on the native event, not React state — dragover
+                  // can fire before a setDraggingId() from onDragStart has
+                  // actually re-rendered, and skipping preventDefault() here
+                  // even once makes the browser refuse the drop outright.
+                  if (!e.dataTransfer.types.includes("text/plain")) return;
                   e.preventDefault();
                   setDragOverProjectId(p.id);
                 }}
