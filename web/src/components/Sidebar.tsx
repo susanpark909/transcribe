@@ -250,16 +250,23 @@ export function Sidebar({
     const isChecked = selectedIds.has(s.id);
 
     return (
-      <div key={s.id} className="sidebar-item-row">
+      <div
+        key={s.id}
+        className={`sidebar-item-row ${draggingId === s.id ? "dragging" : ""}`}
+        // Draggable lives on this plain wrapper div, not the <button> below —
+        // browsers are inconsistent about starting a custom HTML5 drag from
+        // a form control like a button, which was silently swallowing every
+        // drag attempt before it could even fire dragstart.
+        draggable={!selectionMode}
+        onDragStart={(e) => {
+          setDraggingId(s.id);
+          e.dataTransfer.setData("text/plain", s.id);
+          e.dataTransfer.effectAllowed = "move";
+        }}
+        onDragEnd={() => setDraggingId(null)}
+      >
         <button
-          className={`sidebar-item ${s.id === selectedId ? "active" : ""} ${draggingId === s.id ? "dragging" : ""}`}
-          draggable={!selectionMode}
-          onDragStart={(e) => {
-            setDraggingId(s.id);
-            e.dataTransfer.setData("text/plain", s.id);
-            e.dataTransfer.effectAllowed = "move";
-          }}
-          onDragEnd={() => setDraggingId(null)}
+          className={`sidebar-item ${s.id === selectedId ? "active" : ""}`}
           onClick={() => (selectionMode ? toggleSelected(s.id) : onSelect(s.id))}
         >
           {selectionMode && (
