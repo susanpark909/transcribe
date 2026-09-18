@@ -178,6 +178,29 @@ p.small {
   color: var(--muted);
 }
 
+.btn-select-toggle {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-select-toggle:hover {
+  color: var(--text);
+  background: rgba(15, 23, 32, 0.04);
+}
+
+.btn-select-toggle.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(13, 148, 136, 0.08);
+}
+
 .sidebar-backdrop {
   display: none;
 }
@@ -238,6 +261,17 @@ p.small {
   background: var(--glass-strong);
   border-color: var(--border-strong);
   box-shadow: 0 1px 3px rgba(15, 23, 32, 0.06);
+}
+
+.sidebar-item.dragging {
+  opacity: 0.4;
+}
+
+.project-header.drag-over {
+  background: rgba(13, 148, 136, 0.12);
+  border-radius: 8px;
+  outline: 1.5px dashed var(--accent);
+  outline-offset: -1px;
 }
 
 .sidebar-item-title {
@@ -344,6 +378,57 @@ p.small {
 
 .item-menu-danger:hover {
   background: rgba(220, 38, 38, 0.08) !important;
+}
+
+.select-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border-strong);
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.select-checkbox svg {
+  width: 10px;
+  height: 10px;
+}
+
+.select-checkbox.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.bulk-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--glass-strong);
+  backdrop-filter: blur(16px);
+}
+
+.bulk-action-count {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.bulk-move-wrap {
+  position: relative;
+}
+
+.bulk-move-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  top: auto;
 }
 
 /* ---------- Folders ---------- */
@@ -921,6 +1006,36 @@ p.small {
 
   .sidebar-resize-handle {
     display: none;
+  }
+
+  /* The drawer is narrower than desktop (max 320px) and now has to fit
+     three header actions (Select, New, Close) alongside the brand —
+     tighten everything so "Select" doesn't get pushed off-screen. */
+  .sidebar-header {
+    padding: 16px 14px;
+  }
+
+  .sidebar-header h1 {
+    font-size: 16px;
+  }
+
+  .sidebar-header-actions {
+    gap: 6px;
+  }
+
+  .btn-select-toggle {
+    padding: 6px 8px;
+    font-size: 11.5px;
+  }
+
+  .sidebar-header .btn-sm {
+    padding: 7px 10px;
+    font-size: 11.5px;
+  }
+
+  .sidebar-close-btn {
+    width: 28px;
+    height: 28px;
   }
 
   .sidebar.sidebar-open {

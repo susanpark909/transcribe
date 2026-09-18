@@ -117,6 +117,20 @@ export default function App() {
     }
   }
 
+  async function handleBulkMove(ids: string[], projectId: string | null) {
+    try {
+      const updates = await Promise.all(ids.map((id) => api.moveSource(id, projectId)));
+      setSources((prev) =>
+        prev.map((s) => {
+          const updated = updates.find((u) => u.id === s.id);
+          return updated ? { ...s, project_id: updated.project_id } : s;
+        })
+      );
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   async function handleCreateProject(name: string) {
     try {
       await api.createProject(name);
@@ -160,6 +174,7 @@ export default function App() {
         onRename={handleRename}
         onDelete={handleDelete}
         onMove={handleMove}
+        onBulkMove={handleBulkMove}
         onCreateProject={handleCreateProject}
         onRenameProject={handleRenameProject}
         onDeleteProject={handleDeleteProject}

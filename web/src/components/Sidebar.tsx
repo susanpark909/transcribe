@@ -12,6 +12,7 @@ import {
   FolderPlusIcon,
   ChevronIcon,
   CloseIcon,
+  CheckIcon,
 } from "./Icons";
 
 const KIND_ICON: Record<Source["kind"], (props: { className?: string }) => JSX.Element> = {
@@ -43,6 +44,7 @@ export function Sidebar({
   onRename,
   onDelete,
   onMove,
+  onBulkMove,
   onCreateProject,
   onRenameProject,
   onDeleteProject,
@@ -57,6 +59,7 @@ export function Sidebar({
   onRename: (id: string, title: string) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, projectId: string | null) => void;
+  onBulkMove: (ids: string[], projectId: string | null) => void;
   onCreateProject: (name: string) => void;
   onRenameProject: (id: string, name: string) => void;
   onDeleteProject: (id: string) => void;
@@ -74,6 +77,13 @@ export function Sidebar({
   const [projectRenameValue, setProjectRenameValue] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderValue, setNewFolderValue] = useState("");
+
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
+
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null);
 
   const [width, setWidth] = useState(readStoredSidebarWidth);
   const [resizing, setResizing] = useState(false);
@@ -114,6 +124,28 @@ export function Sidebar({
     setMenuOpenId(null);
     setMoveMenuId(null);
     setProjectMenuOpenId(null);
+    setBulkMoveOpen(false);
+  }
+
+  function toggleSelectionMode() {
+    setSelectionMode((prev) => !prev);
+    setSelectedIds(new Set());
+    setBulkMoveOpen(false);
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleBulkMoveTo(projectId: string | null) {
+    onBulkMove(Array.from(selectedIds), projectId);
+    setSelectedIds(new Set());
+    setBulkMoveOpen(false);
   }
 
   // Capture-phase (not bubble-phase) so this reliably fires before any
@@ -126,7 +158,7 @@ export function Sidebar({
   // would unmount the button out from under the click before it registers.
   useEffect(() => {
     function handlePointerDown(e: MouseEvent) {
-      if ((e.target as Element).closest(".item-menu-wrap")) return;
+      if ((e.target as Element).closest(".item-menu-wrap, .bulk-action-bar")) return;
       closeAllMenus();
     }
     document.addEventListener("mousedown", handlePointerDown, true);
@@ -215,12 +247,26 @@ export function Sidebar({
       );
     }
 
+    const isChecked = selectedIds.has(s.id);
+
     return (
       <div key={s.id} className="sidebar-item-row">
         <button
-          className={`sidebar-item ${s.id === selectedId ? "active" : ""}`}
-          onClick={() => onSelect(s.id)}
+          className={`sidebar-item ${s.id === selectedId ? "active" : ""} ${draggingId === s.id ? "dragging" : ""}`}
+          draggable={!selectionMode}
+          onDragStart={(e) => {
+            setDraggingId(s.id);
+            e.dataTransfer.setData("text/plain", s.id);
+            e.dataTransfer.effectAllowed = "move";
+          }}
+          onDragEnd={() => setDraggingId(null)}
+          onClick={() => (selectionMode ? toggleSelected(s.id) : onSelect(s.id))}
         >
+          {selectionMode && (
+            <span className={`select-checkbox ${isChecked ? "checked" : ""}`}>
+              {isChecked && <CheckIcon />}
+            </span>
+          )}
           <span className={`kind-chip kind-${s.kind}`}>
             <Icon />
           </span>
@@ -233,67 +279,69 @@ export function Sidebar({
           {s.status === "error" && <span className="pill pill-error">!</span>}
         </button>
 
-        <div className="item-menu-wrap">
-          <button
-            className="item-menu-btn"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (menuOpen || moveOpen) {
-                closeAllMenus();
-              } else {
-                setMenuOpenId(s.id);
-                setMoveMenuId(null);
-              }
-            }}
-          >
-            <MoreIcon />
-          </button>
-          {menuOpen && (
-            <div className="item-menu" onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => startRename(s)}>
-                <PencilIcon /> Rename
-              </button>
-              <button
-                onClick={() => {
-                  setMenuOpenId(null);
-                  setMoveMenuId(s.id);
-                }}
-              >
-                <FolderIcon /> Move to folder
-              </button>
-              <button className="item-menu-danger" onClick={() => handleDelete(s)}>
-                <TrashIcon /> Delete
-              </button>
-            </div>
-          )}
-          {moveOpen && (
-            <div className="item-menu" onClick={(e) => e.stopPropagation()}>
-              {projects.length === 0 && <div className="item-menu-hint">No folders yet</div>}
-              {projects.map((p) => (
-                <button
-                  key={p.id}
-                  disabled={p.id === s.project_id}
-                  onClick={() => {
-                    onMove(s.id, p.id);
-                    closeAllMenus();
-                  }}
-                >
-                  <FolderIcon /> {p.name}
+        {!selectionMode && (
+          <div className="item-menu-wrap">
+            <button
+              className="item-menu-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (menuOpen || moveOpen) {
+                  closeAllMenus();
+                } else {
+                  setMenuOpenId(s.id);
+                  setMoveMenuId(null);
+                }
+              }}
+            >
+              <MoreIcon />
+            </button>
+            {menuOpen && (
+              <div className="item-menu" onClick={(e) => e.stopPropagation()}>
+                <button onClick={() => startRename(s)}>
+                  <PencilIcon /> Rename
                 </button>
-              ))}
-              {s.project_id && (
                 <button
                   onClick={() => {
-                    onMove(s.id, null);
-                    closeAllMenus();
+                    setMenuOpenId(null);
+                    setMoveMenuId(s.id);
                   }}
                 >
-                  Remove from folder
+                  <FolderIcon /> Move to folder
                 </button>
-              )}
-            </div>
-          )}
-        </div>
+                <button className="item-menu-danger" onClick={() => handleDelete(s)}>
+                  <TrashIcon /> Delete
+                </button>
+              </div>
+            )}
+            {moveOpen && (
+              <div className="item-menu" onClick={(e) => e.stopPropagation()}>
+                {projects.length === 0 && <div className="item-menu-hint">No folders yet</div>}
+                {projects.map((p) => (
+                  <button
+                    key={p.id}
+                    disabled={p.id === s.project_id}
+                    onClick={() => {
+                      onMove(s.id, p.id);
+                      closeAllMenus();
+                    }}
+                  >
+                    <FolderIcon /> {p.name}
+                  </button>
+                ))}
+                {s.project_id && (
+                  <button
+                    onClick={() => {
+                      onMove(s.id, null);
+                      closeAllMenus();
+                    }}
+                  >
+                    Remove from folder
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -316,6 +364,14 @@ export function Sidebar({
           <h1>Transcribe</h1>
         </div>
         <div className="sidebar-header-actions">
+          {sources.length > 0 && (
+            <button
+              className={`btn-select-toggle ${selectionMode ? "active" : ""}`}
+              onClick={toggleSelectionMode}
+            >
+              {selectionMode ? "Cancel" : "Select"}
+            </button>
+          )}
           <button className="btn-primary btn-sm" onClick={onNew}>
             <PlusIcon /> New
           </button>
@@ -368,7 +424,23 @@ export function Sidebar({
 
           return (
             <div key={p.id} className="project-group">
-              <div className="project-header" onClick={(e) => e.stopPropagation()}>
+              <div
+                className={`project-header ${dragOverProjectId === p.id ? "drag-over" : ""}`}
+                onClick={(e) => e.stopPropagation()}
+                onDragOver={(e) => {
+                  if (!draggingId) return;
+                  e.preventDefault();
+                  setDragOverProjectId(p.id);
+                }}
+                onDragLeave={() => setDragOverProjectId((prev) => (prev === p.id ? null : prev))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const id = e.dataTransfer.getData("text/plain");
+                  if (id) onMove(id, p.id);
+                  setDragOverProjectId(null);
+                  setDraggingId(null);
+                }}
+              >
                 <button className="project-header-main" onClick={() => toggleCollapse(p.id)}>
                   <ChevronIcon className={`chevron ${isCollapsed ? "" : "chevron-open"}`} />
                   <FolderIcon />
@@ -425,6 +497,35 @@ export function Sidebar({
 
         {ungrouped.map(renderSource)}
       </div>
+
+      {selectionMode && (
+        <div className="bulk-action-bar">
+          <span className="bulk-action-count">
+            {selectedIds.size} selected
+          </span>
+          <div className="bulk-move-wrap">
+            <button
+              className="btn-primary btn-sm"
+              disabled={selectedIds.size === 0}
+              onClick={() => setBulkMoveOpen((prev) => !prev)}
+            >
+              <FolderIcon /> Move to folder
+            </button>
+            {bulkMoveOpen && (
+              <div className="item-menu bulk-move-menu" onClick={(e) => e.stopPropagation()}>
+                {projects.length === 0 && <div className="item-menu-hint">No folders yet</div>}
+                {projects.map((p) => (
+                  <button key={p.id} onClick={() => handleBulkMoveTo(p.id)}>
+                    <FolderIcon /> {p.name}
+                  </button>
+                ))}
+                <button onClick={() => handleBulkMoveTo(null)}>Remove from folder</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div
         className={`sidebar-resize-handle ${resizing ? "resizing" : ""}`}
         onPointerDown={(e) => {
