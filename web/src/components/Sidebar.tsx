@@ -72,7 +72,7 @@ export function Sidebar({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
 
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [projectMenuOpenId, setProjectMenuOpenId] = useState<string | null>(null);
   const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
   const [projectRenameValue, setProjectRenameValue] = useState("");
@@ -197,7 +197,7 @@ export function Sidebar({
   }
 
   function toggleCollapse(projectId: string) {
-    setCollapsed((prev) => {
+    setExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(projectId)) next.delete(projectId);
       else next.add(projectId);
@@ -432,7 +432,7 @@ export function Sidebar({
         )}
 
         {projects.map((p) => {
-          const isCollapsed = collapsed.has(p.id);
+          const isCollapsed = !expanded.has(p.id);
           const items = sources.filter((s) => s.project_id === p.id);
           const isRenaming = renamingProjectId === p.id;
           const menuOpen = projectMenuOpenId === p.id;
