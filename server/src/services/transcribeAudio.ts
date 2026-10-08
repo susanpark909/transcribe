@@ -20,7 +20,15 @@ function requireApiKey(): string {
  * accepts uploads up to 2.2GB / audio up to 10 hours per file, which comfortably
  * covers any real lecture or course video.
  */
-export async function transcribeAudioFile(filePath: string): Promise<string> {
+export interface TranscribeOptions {
+  /** Label who is speaking. Output becomes "Speaker A: ..." turns instead of one block of text. */
+  speakerLabels?: boolean;
+}
+
+export async function transcribeAudioFile(
+  filePath: string,
+  options: TranscribeOptions = {}
+): Promise<string> {
   const apiKey = requireApiKey();
 
   // 1. Upload the local file, getting back a URL AssemblyAI can read it from.
@@ -39,7 +47,12 @@ export async function transcribeAudioFile(filePath: string): Promise<string> {
   const submitRes = await fetch(`${ASSEMBLYAI_BASE}/transcript`, {
     method: "POST",
     headers: { authorization: apiKey, "content-type": "application/json" },
-    body: JSON.stringify({ audio_url: audioUrl }),
+    body: JSON.stringify({
+      audio_url: audioUrl,
+      // Two-party calls (e.g. employee + seller) — telling it how many voices
+      // to expect keeps it from splitting one person into two speakers.
+      ...(options.speakerLabels ? { speaker_labels: true, speakers_expected: 2 } : {}),
+    }),
   });
   if (!submitRes.ok) {
     throw new Error(`AssemblyAI transcript request failed: ${submitRes.status} ${await submitRes.text()}`);
@@ -55,9 +68,19 @@ export async function transcribeAudioFile(filePath: string): Promise<string> {
     if (!pollRes.ok) {
       throw new Error(`AssemblyAI status check failed: ${pollRes.status} ${await pollRes.text()}`);
     }
-    const data = (await pollRes.json()) as { status: string; text: string | null; error?: string };
+    const data = (await pollRes.json()) as {
+      status: string;
+      text: string | null;
+      error?: string;
+      utterances?: { speaker: string; text: string }[] | null;
+    };
 
-    if (data.status === "completed") return data.text ?? "";
+    if (data.status === "completed") {
+      if (options.speakerLabels && data.utterances?.length) {
+        return data.utterances.map((u) => `Speaker ${u.speaker}: ${u.text}`).join("\n\n");
+      }
+      return data.text ?? "";
+    }
     if (data.status === "error") throw new Error(`AssemblyAI transcription failed: ${data.error}`);
 
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));

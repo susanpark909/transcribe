@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
-import { transcribeAudioFile } from "./transcribeAudio.js";
+import { transcribeAudioFile, TranscribeOptions } from "./transcribeAudio.js";
 import { parseSubtitleFile } from "./subtitles.js";
 import { resolveMediaUrl } from "./resolveMediaUrl.js";
 import { writeCookiesFileForUrl } from "./browserCookies.js";
@@ -116,7 +116,8 @@ async function downloadAndTranscribeAudio(
   mediaUrl: string,
   workDir: string,
   extraHeaders: string[] = [],
-  cookiesUrl: string = mediaUrl
+  cookiesUrl: string = mediaUrl,
+  options: TranscribeOptions = {}
 ): Promise<string> {
   const downloadTemplate = path.join(workDir, "download.%(ext)s");
 
@@ -152,11 +153,12 @@ async function downloadAndTranscribeAudio(
     { maxBuffer: 20 * 1024 * 1024, timeout: 10 * 60 * 1000 }
   );
 
-  return transcribeAudioFile(audioPath);
+  return transcribeAudioFile(audioPath, options);
 }
 
 export async function downloadAndTranscribeVideo(
-  url: string
+  url: string,
+  options: TranscribeOptions = {}
 ): Promise<{ title: string; transcript: string; usedCaptions: boolean; resolvedViaBrowser: boolean }> {
   requireBinaries();
 
@@ -172,7 +174,7 @@ export async function downloadAndTranscribeVideo(
     }
 
     try {
-      const transcript = await downloadAndTranscribeAudio(url, workDir);
+      const transcript = await downloadAndTranscribeAudio(url, workDir, [], url, options);
       return { title, transcript, usedCaptions: false, resolvedViaBrowser: false };
     } catch (directErr) {
       // No dedicated extractor for this site (common for custom course platforms like
@@ -195,7 +197,8 @@ export async function downloadAndTranscribeVideo(
         resolved.mediaUrl,
         workDir,
         [`Referer: ${resolved.referer}`, ...(resolved.cookieHeader ? [`Cookie: ${resolved.cookieHeader}`] : [])],
-        url // look up cookies by the original page's domain, not the resolved CDN's
+        url, // look up cookies by the original page's domain, not the resolved CDN's
+        options
       );
       return { title, transcript, usedCaptions: false, resolvedViaBrowser: true };
     }

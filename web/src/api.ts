@@ -38,19 +38,27 @@ export const api = {
       if (!r.ok) throw new Error("Failed to delete");
     }),
 
-  uploadAudio: (file: File) => {
+  uploadAudio: (file: File, speakerLabels = false) => {
     const form = new FormData();
+    form.append("speakerLabels", String(speakerLabels));
     form.append("file", file);
     return fetch("/api/sources/audio", { method: "POST", body: form }).then(
       (r) => handle<Source>(r)
     );
   },
 
-  submitVideo: (url: string) =>
+  submitVideo: (url: string, speakerLabels = false) =>
     fetch("/api/sources/video", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, speakerLabels }),
+    }).then((r) => handle<Source>(r)),
+
+  renameSpeakers: (id: string, names: Record<string, string>) =>
+    fetch(`/api/sources/${id}/speakers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ names }),
     }).then((r) => handle<Source>(r)),
 
   renameSource: (id: string, title: string) =>

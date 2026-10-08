@@ -8,6 +8,7 @@ export function UploadPanel({ onCreated }: { onCreated: (id: string) => void }) 
   const [tab, setTab] = useState<Tab>("video");
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
+  const [speakers, setSpeakers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -17,7 +18,7 @@ export function UploadPanel({ onCreated }: { onCreated: (id: string) => void }) 
     setBusy(true);
     setError(null);
     try {
-      const source = await api.submitVideo(url.trim());
+      const source = await api.submitVideo(url.trim(), speakers);
       setUrl("");
       onCreated(source.id);
     } catch (err) {
@@ -31,7 +32,7 @@ export function UploadPanel({ onCreated }: { onCreated: (id: string) => void }) 
     setBusy(true);
     setError(null);
     try {
-      const source = await api.uploadAudio(file);
+      const source = await api.uploadAudio(file, speakers);
       onCreated(source.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -59,6 +60,19 @@ export function UploadPanel({ onCreated }: { onCreated: (id: string) => void }) 
           <AudioIcon /> Audio
         </button>
       </div>
+
+      <label className="speakers-toggle">
+        <input
+          type="checkbox"
+          checked={speakers}
+          onChange={(e) => setSpeakers(e.target.checked)}
+          disabled={busy}
+        />
+        <span>
+          Identify speakers
+          <span className="muted small"> — for calls and interviews (labels each person's turn)</span>
+        </span>
+      </label>
 
       {tab === "video" && (
         <form onSubmit={handleVideoSubmit} className="upload-form">
