@@ -45,6 +45,7 @@ export function Sidebar({
   onDelete,
   onMove,
   onBulkMove,
+  onBulkDelete,
   onCreateProject,
   onRenameProject,
   onDeleteProject,
@@ -60,6 +61,7 @@ export function Sidebar({
   onDelete: (id: string) => void;
   onMove: (id: string, projectId: string | null) => void;
   onBulkMove: (ids: string[], projectId: string | null) => void;
+  onBulkDelete: (ids: string[]) => void;
   onCreateProject: (name: string) => void;
   onRenameProject: (id: string, name: string) => void;
   onDeleteProject: (id: string) => void;
@@ -140,6 +142,16 @@ export function Sidebar({
       else next.add(id);
       return next;
     });
+  }
+
+  function handleBulkDeleteSelected() {
+    const count = selectedIds.size;
+    if (count === 0) return;
+    if (window.confirm(`Delete ${count} ${count === 1 ? "item" : "items"}? This can't be undone.`)) {
+      onBulkDelete(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      setBulkMoveOpen(false);
+    }
   }
 
   function handleBulkMoveTo(projectId: string | null) {
@@ -514,13 +526,20 @@ export function Sidebar({
           <span className="bulk-action-count">
             {selectedIds.size} selected
           </span>
+          <button
+            className="btn-bulk-delete"
+            disabled={selectedIds.size === 0}
+            onClick={handleBulkDeleteSelected}
+          >
+            <TrashIcon /> Delete
+          </button>
           <div className="bulk-move-wrap">
             <button
               className="btn-primary btn-sm"
               disabled={selectedIds.size === 0}
               onClick={() => setBulkMoveOpen((prev) => !prev)}
             >
-              <FolderIcon /> Move to folder
+              <FolderIcon /> Move
             </button>
             {bulkMoveOpen && (
               <div className="item-menu bulk-move-menu" onClick={(e) => e.stopPropagation()}>

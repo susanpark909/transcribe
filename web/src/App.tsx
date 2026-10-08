@@ -108,6 +108,20 @@ export default function App() {
     }
   }
 
+  async function handleBulkDelete(ids: string[]) {
+    // allSettled so one failed delete doesn't leave the rest un-attempted;
+    // the list refresh below shows whatever actually got removed.
+    const results = await Promise.allSettled(ids.map((id) => api.deleteSource(id)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed > 0) setActionError(`${failed} of ${ids.length} couldn't be deleted.`);
+    if (selectedId && ids.includes(selectedId)) {
+      setSelectedId(null);
+      setDetail(null);
+      setShowUpload(true);
+    }
+    refreshList();
+  }
+
   async function handleMove(id: string, projectId: string | null) {
     try {
       const updated = await api.moveSource(id, projectId);
@@ -175,6 +189,7 @@ export default function App() {
         onDelete={handleDelete}
         onMove={handleMove}
         onBulkMove={handleBulkMove}
+        onBulkDelete={handleBulkDelete}
         onCreateProject={handleCreateProject}
         onRenameProject={handleRenameProject}
         onDeleteProject={handleDeleteProject}
