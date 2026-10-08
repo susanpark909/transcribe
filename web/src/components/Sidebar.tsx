@@ -3,7 +3,6 @@ import { Source, Project } from "../api";
 import {
   VideoIcon,
   AudioIcon,
-  PlusIcon,
   SparkleIcon,
   MoreIcon,
   PencilIcon,
@@ -378,10 +377,10 @@ export function Sidebar({
         style={{ ["--sidebar-width" as string]: `${width}px` }}
       >
       <div className="sidebar-header">
-        <div className="brand">
+        <button className="brand" onClick={onNew} title="Add a new video or audio file">
           <SparkleIcon className="brand-mark" />
           <h1>Transcribe</h1>
-        </div>
+        </button>
         <div className="sidebar-header-actions">
           {sources.length > 0 && (
             <button
@@ -391,9 +390,6 @@ export function Sidebar({
               {selectionMode ? "Cancel" : "Select"}
             </button>
           )}
-          <button className="btn-primary btn-sm" onClick={onNew}>
-            <PlusIcon /> New
-          </button>
           <button className="sidebar-close-btn" onClick={onMobileClose} aria-label="Close menu">
             <CloseIcon />
           </button>

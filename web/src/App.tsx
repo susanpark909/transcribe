@@ -201,7 +201,15 @@ export default function App() {
           <button className="mobile-menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
             <MenuIcon />
           </button>
-          <h1>Transcribe</h1>
+          <h1
+            style={{ cursor: "pointer" }}
+            onClick={() => {
+              setShowUpload(true);
+              setSelectedId(null);
+            }}
+          >
+            Transcribe
+          </h1>
         </div>
         {health && !health.assemblyAiConfigured && (
           <div className="notice notice-warning">

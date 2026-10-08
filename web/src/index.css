@@ -153,6 +153,15 @@ p.small {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.brand:hover {
+  opacity: 0.75;
 }
 
 .brand-mark {
